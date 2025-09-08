@@ -33,9 +33,8 @@ fn serve(socket: Socket) -> Nil {
     Ok(msg) -> {
       echo #("got a msg", bit_array.to_string(msg))
       let _ = tcp.send(socket, bytes_tree.from_bit_array(msg))
-      let _ = tcp.close(socket)
-      // serve(socket)
       io.println("succ recv msg")
+      serve(socket)
     }
     Error(_) -> {
       let _ = tcp.close(socket)
