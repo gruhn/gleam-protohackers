@@ -29,7 +29,7 @@ fn accept_loop(listener: ListenSocket) -> Nil {
 }
 
 fn serve(socket: Socket, session: Session) -> Nil {
-  case tcp.receive(socket, 0) {
+  case tcp.receive(socket, 9) {
     Ok(bit_array) -> {
       case parse_message(bit_array) {
         I(insert_msg) -> {
