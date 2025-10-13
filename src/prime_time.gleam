@@ -77,6 +77,7 @@ pub fn create_response(answer: Bool) -> BytesTree {
     #("prime", json.bool(answer)),
   ])
   |> json.to_string
+  |> fn(s) { s <> "\n" }
   |> bytes_tree.from_string
 }
 
@@ -88,10 +89,11 @@ fn serve(socket: Socket) -> Nil {
         Ok(num) -> {
           let _ = tcp.send(socket, create_response(is_prime(num)))
           io.println("succ recv msg")
-          serve(socket)
+          // serve(socket)
         }
         Error(err) -> {
           echo err
+          let _ = tcp.close(socket)
           io.println("invalid msg")
         }
       }
