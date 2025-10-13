@@ -31,20 +31,24 @@ fn accept_loop(listener: ListenSocket) -> Nil {
 fn serve(socket: Socket, session: Session) -> Nil {
   case tcp.receive(socket, 9) {
     Ok(bit_array) -> {
+      echo #("serve ok:", bit_array)
       case parse_message(bit_array) {
         I(insert_msg) -> {
           serve(socket, insert_session(insert_msg, session))
         }
         Q(query_msg) -> {
           let mean = query_session(query_msg, session)
-          let _ = tcp.send(socket, bytes_tree.from_bit_array(<<mean:size(32)>>))
+          let resp = bytes_tree.from_bit_array(<<mean:size(32)>>)
+          echo #("serve resp:", resp)
+          let _ = tcp.send(socket, resp)
           serve(socket, session)
         }
       }
     }
-    Error(_) -> {
+    Error(err) -> {
+      echo #("serve error:", err)
       let _ = tcp.close(socket)
-      io.println("err recv msg")
+      Nil
     }
   }
 }
@@ -64,7 +68,7 @@ type Message {
 
 fn parse_message(bit_array: BitArray) -> Message {
   case bit_array {
-    <<char:int-size(8), first:big-size(32), second:big-size(32)>> -> {
+    <<char:int-size(8), first:signed-big-size(32), second:signed-big-size(32)>> -> {
       case char {
         73 -> I(Insert(first, second))
         81 -> Q(Query(first, second))
@@ -85,6 +89,7 @@ type Session =
   List(InsertMsg)
 
 fn insert_session(msg: InsertMsg, session: Session) -> Session {
+  echo #("insert_session", msg)
   [msg, ..session]
 }
 
@@ -94,6 +99,7 @@ fn mean(items: List(Int)) -> Int {
 }
 
 fn query_session(msg: QueryMsg, session: Session) -> Int {
+  echo #("query_session", msg)
   session
   |> list.filter(fn(entry) {
     msg.min_time <= entry.time && entry.time <= msg.max_time
