@@ -33,15 +33,20 @@ fn serve(socket: Socket, session: Session) -> Nil {
     Ok(bit_array) -> {
       echo #("serve ok:", bit_array)
       case parse_message(bit_array) {
-        I(insert_msg) -> {
+        Ok(I(insert_msg)) -> {
           serve(socket, insert_session(insert_msg, session))
         }
-        Q(query_msg) -> {
+        Ok(Q(query_msg)) -> {
           let mean = query_session(query_msg, session)
           let resp = bytes_tree.from_bit_array(<<mean:size(32)>>)
           echo #("serve resp:", resp)
           let _ = tcp.send(socket, resp)
           serve(socket, session)
+        }
+        Error(_) -> {
+          echo #("parse error")
+          let _ = tcp.close(socket)
+          Nil
         }
       }
     }
@@ -66,21 +71,21 @@ type Message {
   Q(QueryMsg)
 }
 
-fn parse_message(bit_array: BitArray) -> Message {
+fn parse_message(bit_array: BitArray) -> Result(Message, Nil) {
   case bit_array {
     <<char:int-size(8), first:signed-big-size(32), second:signed-big-size(32)>> -> {
       case char {
-        73 -> I(Insert(first, second))
-        81 -> Q(Query(first, second))
+        73 -> Ok(I(Insert(first, second)))
+        81 -> Ok(Q(Query(first, second)))
         _ -> {
           echo #("parse char:", char)
-          panic
+          Error(Nil)
         }
       }
     }
     _ -> {
-      echo #("parse array", bit_array)
-      panic
+      echo #("parse array:", bit_array)
+      Error(Nil)
     }
   }
 }
