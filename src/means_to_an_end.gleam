@@ -68,10 +68,16 @@ fn parse_message(bit_array: BitArray) -> Message {
       case char {
         73 -> I(Insert(first, second))
         81 -> Q(Query(first, second))
-        _ -> panic
+        _ -> {
+          echo #("parse char:", char)
+          panic
+        }
       }
     }
-    _ -> panic
+    _ -> {
+      echo #("parse array", bit_array)
+      panic
+    }
   }
 }
 
