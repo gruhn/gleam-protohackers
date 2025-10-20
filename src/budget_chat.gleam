@@ -52,10 +52,19 @@ fn accept_new_connection(
   listen_socket: ListenSocket,
   subject: process.Subject(Event),
 ) {
-  let assert Ok(socket) = tcp.accept(listen_socket)
-  echo "accept_new_connection"
-  process.spawn(fn() { accept_new_connection(listen_socket, subject) })
-  handle_new_connection(socket, subject)
+  case tcp.accept(listen_socket) {
+    Ok(socket) -> {
+      echo "[accept_new_connection] success"
+      let pid = process.spawn(fn() { handle_new_connection(socket, subject) })
+      let _ = tcp.controlling_process(socket, pid)
+      Nil
+    }
+    Error(err) -> {
+      echo #("[accept_new_connection] error", err)
+      Nil
+    }
+  }
+  accept_new_connection(listen_socket, subject)
 }
 
 fn handle_new_connection(socket: Socket, subject: process.Subject(Event)) -> Nil {
