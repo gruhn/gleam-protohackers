@@ -53,6 +53,7 @@ fn accept_new_connection(
   subject: process.Subject(Event),
 ) {
   let assert Ok(socket) = tcp.accept(listen_socket)
+  echo "accept_new_connection"
   process.spawn(fn() { handle_new_connection(socket, subject) })
   accept_new_connection(listen_socket, subject)
 }
