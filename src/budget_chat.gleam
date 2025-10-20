@@ -35,12 +35,12 @@ fn accept_new_message(
   case tcp_extra.read_line(socket) {
     Ok(msg) -> {
       // TODO: validate message
-      echo #("session accept:", msg)
+      echo #("[accept_new_message] success", user, msg)
       process.send(subject, Message(user, msg))
       accept_new_message(user, socket, subject)
     }
     Error(err) -> {
-      echo #(user, "[accept_new_message] error", err)
+      echo #(user, "[accept_new_message] error", user, err)
       process.send(subject, UserLeave(user))
       let _ = tcp.close(socket)
       Nil
