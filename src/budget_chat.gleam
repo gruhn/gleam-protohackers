@@ -1,6 +1,7 @@
 import gleam/dict
 import gleam/erlang/process
 import gleam/list
+import gleam/regexp
 import gleam/string
 import glisten/socket.{type ListenSocket, type Socket}
 import glisten/socket/options.{ActiveMode, Passive}
@@ -34,7 +35,6 @@ fn accept_new_message(
 ) {
   case tcp_extra.read_line(socket) {
     Ok(msg) -> {
-      // TODO: validate message
       echo #("[accept_new_message] success", user, msg)
       process.send(subject, Message(user, msg))
       accept_new_message(user, socket, subject)
@@ -67,17 +67,29 @@ fn accept_new_connection(
   accept_new_connection(listen_socket, subject)
 }
 
+fn is_valid_user_name(name: String) -> Bool {
+  let assert Ok(re) = regexp.from_string("^[a-zA-Z0-9]+$")
+  regexp.check(re, name)
+}
+
 fn handle_new_connection(socket: Socket, subject: process.Subject(Event)) -> Nil {
   let assert Ok(_) =
     tcp_extra.send_line(socket, "Welcome to budgetchat! What shall I call you?")
 
   case tcp_extra.read_line(socket) {
     Ok(user) -> {
-      // TODO: validate user name
-      echo "[handle_new_connection] new user: " <> user
-
-      process.send(subject, UserJoin(user, socket))
-      accept_new_message(user, socket, subject)
+      case is_valid_user_name(user) {
+        True -> {
+          echo "[handle_new_connection] new user: " <> user
+          process.send(subject, UserJoin(user, socket))
+          accept_new_message(user, socket, subject)
+        }
+        False -> {
+          echo #("[handle_new_connection] invalid user name:", user)
+          let _ = tcp.close(socket)
+          Nil
+        }
+      }
     }
     Error(err) -> {
       echo #("[handle_new_connection] error:", err)
