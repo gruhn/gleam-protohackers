@@ -119,6 +119,7 @@ fn event_loop(users: Users, subject: process.Subject(Event)) -> Nil {
     }
     Message(sender, body) -> {
       let msg = "[" <> sender <> "] " <> body
+      process.sleep(1000)
       broadcast(msg, users |> dict.delete(sender))
       event_loop(users, subject)
     }
